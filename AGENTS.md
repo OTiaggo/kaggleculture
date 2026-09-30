@@ -8,6 +8,8 @@ Referência consultada em **30/09/2026**. Este documento é uma síntese operaci
 
 Antes de implementar, inspecione o repositório existente e preserve sua organização. Não suponha que as pastas e os scripts sugeridos aqui já existem.
 
+O arquivo [historico de tentativas.md](historico%20de%20tentativas.md) registra as submissões, hipóteses, mudanças, testes locais, resultados positivos e negativos e limitações já observadas. Consulte-o antes de propor outra alteração estratégica e acrescente as novas tentativas com as mesmas distinções entre moedas locais e pontuação pública.
+
 ## 1. Competição e calendário
 
 Fonte: [Overview do Kaggle](https://www.kaggle.com/competitions/kaggriculture/overview/citation).

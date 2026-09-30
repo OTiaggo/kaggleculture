@@ -64,14 +64,17 @@ A submissão `56716107` (`Agente economico multi-worker v1`, enviada em
 30/09/2026) recebeu **600,0 pontos públicos** no Kaggle e foi concluída com
 status `COMPLETE`.
 
-Depois dessa submissão, o agente foi ajustado em três tentativas locais. Na
-última, venceu a versão submetida em 8 de 8 partidas (quatro sementes, cada
-agente em ambos os lados), com média de 24.309 moedas. Essas moedas são a
-recompensa dentro das partidas e não equivalem à pontuação pública. O pacote
-atual `submission.tar.gz` contém essa versão ajustada; ainda não há pontuação
-pública registrada para ela.
+Depois dessa submissão, o agente foi ajustado localmente. A versão do commit
+`169a088` venceu a versão submetida em 8 de 8 partidas (quatro sementes, cada
+agente em ambos os lados), com média de 24.309 moedas. Em três novas tentativas,
+o agente passou a colher melões aos 10 dias, comprar sementes também no fim da
+temporada e ocupar até 25 espaços. A versão atual venceu a do commit `169a088`
+em 8 de 8 partidas; o limite de 25 plantas venceu o de 21 em 13 de 16 partidas
+adicionais. Essas moedas e vitórias locais não equivalem à pontuação pública.
+O pacote atual `submission.tar.gz` contém a versão mais recente; ainda não há
+pontuação pública registrada para ela.
 
-Para repetir a comparação local com a versão da submissão `56716107`:
+Para repetir a comparação local com a versão do commit `169a088`:
 
 ```powershell
 uv run --with kaggle-environments -- python evaluate_local.py --seeds 4

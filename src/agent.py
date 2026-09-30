@@ -6,7 +6,7 @@ PARAMS = {
     "hire_action_value": 17.0,
     "max_hires_daily": 8,
     "planting_reserve": 12,
-    "max_plants": 21,
+    "max_plants": 25,
     "late_days": 4,
     "expansion_min_days": 13,
 }
@@ -74,7 +74,7 @@ def _shop_counts(obs):
 
 def _crop_score(crop, obs, opponent_pressure, demand, days_left):
     info = CROPS[crop]
-    harvest_day = {"WHEAT": 4, "CARROT": 3, "MELON": 12}.get(crop, info["first"])
+    harvest_day = {"WHEAT": 4, "CARROT": 3, "MELON": 10}.get(crop, info["first"])
     if days_left < harvest_day + 1:
         return -1e6
     price = _price(obs, crop)
@@ -139,7 +139,7 @@ def _task_list(obs, farm, own_index, days_left):
             age = max(0, day - _int(tile.get("planted_day"), day))
             # One-time crops gain most of their yield from watering after the
             # first harvestable day. Wait for that bonus before harvesting.
-            harvest_age = {"WHEAT": 4, "CARROT": 3, "MELON": 12}.get(
+            harvest_age = {"WHEAT": 4, "CARROT": 3, "MELON": 10}.get(
                 crop, CROPS.get(crop, {}).get("first", 999)
             )
             ripe = _int(tile.get("yield_units")) > 0 and age >= harvest_age
@@ -247,8 +247,8 @@ def _market_actions(obs, farm, days_left, tasks, worker_count):
         orders.extend(sales)
     else:
         orders.extend(sales[:max(0, 9 - len(orders))])
-        if seed_order is not None and len(orders) < 10:
-            orders.append(seed_order)
+    if seed_order is not None and len(orders) < 10:
+        orders.append(seed_order)
     return orders[:10]
 
 
