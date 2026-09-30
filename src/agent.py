@@ -74,7 +74,8 @@ def _shop_counts(obs):
 
 def _crop_score(crop, obs, opponent_pressure, demand, days_left):
     info = CROPS[crop]
-    if days_left < info["first"] + 1:
+    harvest_day = {"WHEAT": 4, "CARROT": 3, "MELON": 12}.get(crop, info["first"])
+    if days_left < harvest_day + 1:
         return -1e6
     price = _price(obs, crop)
     pressure = max(0.0, min(0.8, opponent_pressure.get(crop, 0) * 0.025))
@@ -136,14 +137,19 @@ def _task_list(obs, farm, own_index, days_left):
             plants += 1
             crop = str(tile.get("crop", "")).upper()
             age = max(0, day - _int(tile.get("planted_day"), day))
-            ripe = _int(tile.get("yield_units")) > 0 and age >= CROPS.get(crop, {}).get("first", 999)
+            # One-time crops gain most of their yield from watering after the
+            # first harvestable day. Wait for that bonus before harvesting.
+            harvest_age = {"WHEAT": 4, "CARROT": 3, "MELON": 12}.get(
+                crop, CROPS.get(crop, {}).get("first", 999)
+            )
+            ripe = _int(tile.get("yield_units")) > 0 and age >= harvest_age
             watered = bool(tile.get("watered_today", False))
-            urgency = 150 if _int(tile.get("consecutive_unwatered")) >= 1 and not watered else 0
+            urgency = 200 if _int(tile.get("consecutive_unwatered")) >= 1 and not watered else 0
             if ripe:
                 value = _price(obs, crop) * min(4, _int(tile.get("yield_units")))
                 tasks.append((max(130, 70 + min(70, value / 10)), pos, ["HARVEST"], "harvest", crop))
             if not watered:
-                tasks.append((max(urgency, 45 + (28 if _int(tile.get("consecutive_unwatered")) >= 1 else 0)), pos, ["WATER"], "water", crop))
+                tasks.append((max(urgency, 115 + (45 if _int(obs.get("hour")) >= 18 else 0)), pos, ["WATER"], "water", crop))
             if not ripe and crop in CROPS and not bool(tile.get("fertilized_until_day", -1) >= day):
                 next_yield = _price(obs, crop) * (1.0 if crop in ("WHEAT", "CARROT") else 0.45)
                 if next_yield > 145 and days_left > 5:
@@ -168,15 +174,17 @@ def _task_list(obs, farm, own_index, days_left):
         opponent = farms[1 - own_index] if isinstance(farms, list) and len(farms) > 1 else {}
         pressure = _opponent_pressure(obs, opponent)
         demand = _shop_counts(obs)
-        stocked = [crop for crop in CROPS if _int(crops_owned.get(crop)) > 0]
-        best = sorted(stocked or CROPS, key=lambda crop: (-_crop_score(crop, obs, pressure, demand, days_left), crop))
-        crop = best[0]
-        if _int(crops_owned.get(crop)) > 0:
+        stocked = [crop for crop in CROPS if _int(crops_owned.get(crop)) > 0
+                   and _crop_score(crop, obs, pressure, demand, days_left) > 0]
+        if stocked:
+            crop = max(stocked, key=lambda item: _crop_score(item, obs, pressure, demand, days_left))
+            remaining_seeds = _int(crops_owned.get(crop))
             for pos in empty:
-                if plants >= max_active:
+                if plants >= max_active or remaining_seeds <= 0:
                     break
                 tasks.append((34 + max(0, _crop_score(crop, obs, pressure, demand, days_left)) * 0.12, pos, ["PLANT", crop], "plant", crop))
                 plants += 1
+                remaining_seeds -= 1
     for x, y, tile in _tiles(farm):
         if isinstance(tile, dict) and str(tile.get("kind", "")).upper() == "WEED":
             tasks.append((8, (x, y), ["DIG"], "optional", "WEED"))
@@ -210,20 +218,24 @@ def _market_actions(obs, farm, days_left, tasks, worker_count):
     orders = []
     seeds = _dict(private.get("seeds"))
     seed_order = None
-    if days_left > 4 and farm.get("money", 0) > 150 and not any(_int(amount) > 0 for amount in seeds.values()):
+    if days_left > 3 and farm.get("money", 0) > 150:
         farms = obs.get("farms", [])
         opponent = farms[1 - _int(obs.get("player"))] if isinstance(farms, list) and len(farms) > 1 else {}
         pressure, demand = _opponent_pressure(obs, opponent), _shop_counts(obs)
         crop = max(CROPS, key=lambda c: (_crop_score(c, obs, pressure, demand, days_left), c))
-        desired = min(4, max(0, PARAMS["planting_reserve"] // 4 - _int(seeds.get(crop))))
-        if desired and _int(seeds.get(crop)) < 2:
-            seed_order = ["BUY_SEED", crop, min(2, desired)]
+        target_stock = 12 if days_left <= 7 else 6
+        desired = max(0, min(target_stock, PARAMS["max_plants"] - sum(
+            1 for _, _, tile in _tiles(farm)
+            if isinstance(tile, dict) and tile.get("kind") == "PLANT"
+        )) - _int(seeds.get(crop)))
+        if desired and _int(seeds.get(crop)) < 3:
+            seed_order = ["BUY_SEED", crop, desired]
     else:
         seed_order = None
     hires = _int(farm.get("hires_today"))
     available_tasks = len(tasks)
     money = float(farm.get("money", 0) or 0)
-    max_hires = 0 if days_left <= PARAMS["late_days"] else min(PARAMS["max_hires_daily"], max(0, available_tasks - worker_count + 1))
+    max_hires = 0 if days_left <= 1 else min(PARAMS["max_hires_daily"], max(0, available_tasks - worker_count + 1))
     for n in range(hires, max_hires):
         cost = _fibonacci_cost(n)
         if money < cost + 30:

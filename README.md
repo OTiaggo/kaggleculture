@@ -58,6 +58,25 @@ O benchmark testa o agente nos dois lados. Para rodar apenas o self-play:
 uv run --with kaggle-environments -- python benchmark.py --seeds 30 --self-play-only
 ```
 
+## Resultados
+
+A submissão `56716107` (`Agente economico multi-worker v1`, enviada em
+30/09/2026) recebeu **600,0 pontos públicos** no Kaggle e foi concluída com
+status `COMPLETE`.
+
+Depois dessa submissão, o agente foi ajustado em três tentativas locais. Na
+última, venceu a versão submetida em 8 de 8 partidas (quatro sementes, cada
+agente em ambos os lados), com média de 24.309 moedas. Essas moedas são a
+recompensa dentro das partidas e não equivalem à pontuação pública. O pacote
+atual `submission.tar.gz` contém essa versão ajustada; ainda não há pontuação
+pública registrada para ela.
+
+Para repetir a comparação local com a versão da submissão `56716107`:
+
+```powershell
+uv run --with kaggle-environments -- python evaluate_local.py --seeds 4
+```
+
 ## Arquivo de submissão
 
 O pacote `submission.tar.gz` contém `main.py` e `agent.py` na raiz. Para recriá-lo após alterações:
